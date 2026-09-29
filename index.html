@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a1128">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Countdown — Letters &amp; Numbers</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230a1128'/%3E%3Ctext x='50' y='68' font-size='50' font-family='Georgia,serif' font-weight='700' fill='%23ffcf40' text-anchor='middle'%3E9%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a1128;
+    --bg-panel:#111d42;
+    --bg-panel-2:#0d1636;
+    --line:rgba(159,176,209,0.18);
+    --gold:#ffcf40;
+    --gold-deep:#c98f0a;
+    --teal:#2dd4bf;
+    --teal-deep:#0e9488;
+    --ink:#eef1f8;
+    --ink-dim:#9fb0d1;
+    --font-display: 'Bebas Neue', 'Arial Narrow', sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  html,body{ overscroll-behavior-y: contain; }
+  body{ -webkit-tap-highlight-color: transparent; }
+  a{ -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(255,207,64,0.05), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(45,212,191,0.06), transparent 40%),
+      var(--bg);
+    color:var(--ink);
+    font-family: var(--font-body);
+    min-height:100%;
+    display:flex; justify-content:center;
+    line-height:1.5;
+  }
+  .app{ width:100%; max-width:640px; padding:calc(3rem + env(safe-area-inset-top)) 1.25rem calc(3rem + env(safe-area-inset-bottom)); }
+  :focus-visible{ outline:2px solid var(--teal); outline-offset:3px; }
+
+  .wordmark{ display:flex; align-items:center; gap:0.9rem; margin-bottom:0.4rem; }
+  .wordmark .tile-9{
+    width:56px; height:56px; flex:none; border-radius:12px;
+    background:linear-gradient(155deg,#ffe184,var(--gold) 55%,var(--gold-deep));
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display); font-size:2rem; color:#3a2a00;
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.5), inset 0 -3px 6px rgba(0,0,0,0.25), 0 6px 14px rgba(0,0,0,0.35);
+  }
+  .wordmark h1{
+    font-family:var(--font-display); font-size:2.8rem; letter-spacing:0.02em;
+    margin:0; line-height:1; color:var(--ink);
+  }
+  .tagline{ color:var(--ink-dim); margin:0 0 2.5rem; font-size:1rem; }
+
+  .card-grid{ display:flex; flex-direction:column; gap:1.25rem; }
+  .game-card{
+    display:block; text-decoration:none; color:inherit;
+    background: linear-gradient(180deg, var(--bg-panel), var(--bg-panel-2));
+    border:1px solid var(--line); border-radius:18px; padding:1.75rem;
+    position:relative; overflow:hidden;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .game-card::before{
+    content:""; position:absolute; top:0; left:0; right:0; height:3px;
+  }
+  .game-card.letters::before{ background:linear-gradient(90deg, var(--gold), var(--teal)); }
+  .game-card.numbers::before{ background:linear-gradient(90deg, var(--teal), var(--gold)); }
+  .game-card:hover{ transform:translateY(-3px); border-color:rgba(255,255,255,0.3); }
+  .game-card.letters:hover{ box-shadow:0 12px 28px rgba(255,207,64,0.15); }
+  .game-card.numbers:hover{ box-shadow:0 12px 28px rgba(45,212,191,0.15); }
+
+  .card-top{ display:flex; align-items:center; gap:1rem; margin-bottom:0.9rem; }
+  .card-icon{
+    width:48px; height:48px; flex:none; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display); font-size:1.6rem;
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.5), inset 0 -3px 6px rgba(0,0,0,0.25), 0 6px 14px rgba(0,0,0,0.35);
+  }
+  .letters .card-icon{ background:linear-gradient(155deg,#ffe184,var(--gold) 55%,var(--gold-deep)); color:#3a2a00; }
+  .numbers .card-icon{ background:linear-gradient(155deg,#7cf0e2,var(--teal) 55%,var(--teal-deep)); color:#04211d; }
+  .card-top h2{ font-family:var(--font-display); font-size:1.7rem; margin:0; letter-spacing:0.02em; color:var(--ink); }
+
+  .card-desc{ color:var(--ink-dim); font-size:0.94rem; margin:0 0 1.25rem; }
+
+  .card-cta{
+    display:inline-flex; align-items:center; gap:0.5rem;
+    font-weight:800; font-size:0.95rem; padding:0.65rem 1.1rem; border-radius:10px;
+  }
+  .letters .card-cta{ background:rgba(255,207,64,0.14); border:1px solid rgba(255,207,64,0.4); color:var(--gold); }
+  .numbers .card-cta{ background:rgba(45,212,191,0.14); border:1px solid rgba(45,212,191,0.4); color:var(--teal); }
+  .game-card.letters:hover .card-cta{ background:rgba(255,207,64,0.24); }
+  .game-card.numbers:hover .card-cta{ background:rgba(45,212,191,0.24); }
+
+  footer{ margin-top:2.5rem; text-align:center; color:var(--ink-dim); font-size:0.8rem; }
+
+  @media (max-width:420px){
+    .wordmark h1{ font-size:2.2rem; }
+    .card-top h2{ font-size:1.4rem; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="wordmark">
+    <div class="tile-9">9</div>
+    <h1>Countdown</h1>
+  </div>
+  <p class="tagline">Two classic rounds. Pick one and beat the clock.</p>
+
+  <div class="card-grid">
+    <a class="game-card letters" href="letters.html">
+      <div class="card-top">
+        <div class="card-icon">Aa</div>
+        <h2>Letters Round</h2>
+      </div>
+      <p class="card-desc">Choose your mix of consonants and vowels, then find the longest word you can before time runs out.</p>
+      <span class="card-cta">Play Letters →</span>
+    </a>
+
+    <a class="game-card numbers" href="numbers.html">
+      <div class="card-top">
+        <div class="card-icon">÷</div>
+        <h2>Numbers Round</h2>
+      </div>
+      <p class="card-desc">Pick your big and little numbers, then add, subtract, multiply and divide your way to the target.</p>
+      <span class="card-cta">Play Numbers →</span>
+    </a>
+  </div>
+
+  <footer>Inspired by the letters and numbers rounds of the UK show Countdown.</footer>
+</div>
+</body>
+</html>

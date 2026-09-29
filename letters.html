@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a1128">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Letters Round — a nine-tile word game</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230a1128'/%3E%3Ctext x='50' y='68' font-size='58' font-family='Georgia,serif' font-weight='700' fill='%23ffcf40' text-anchor='middle'%3E9%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a1128;
+    --bg-panel:#111d42;
+    --bg-panel-2:#0d1636;
+    --line:rgba(159,176,209,0.18);
+    --gold:#ffcf40;
+    --gold-deep:#c98f0a;
+    --teal:#2dd4bf;
+    --red:#ff5470;
+    --ink:#eef1f8;
+    --ink-dim:#9fb0d1;
+    --radius-tile: 14px;
+    --font-display: 'Bebas Neue', 'Arial Narrow', sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(255,207,64,0.05), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(45,212,191,0.06), transparent 40%),
+      var(--bg);
+    color:var(--ink);
+    font-family: var(--font-body);
+    min-height:100%;
+    display:flex;
+    justify-content:center;
+    line-height:1.5;
+  }
+
+  .app{ width:100%; max-width:640px; padding:calc(2rem + env(safe-area-inset-top)) 1.25rem calc(3rem + env(safe-area-inset-bottom)); }
+
+  :focus-visible{ outline:2px solid var(--teal); outline-offset:3px; }
+
+  html,body{ overscroll-behavior-y: contain; }
+  body{ -webkit-tap-highlight-color: transparent; }
+  button{
+    font-family:inherit; cursor:pointer;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  }
+  input[type="range"]{ touch-action: manipulation; }
+
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+
+  /* ---------- Wordmark ---------- */
+  .wordmark{ display:flex; align-items:center; gap:0.9rem; margin-bottom:0.4rem; }
+  .wordmark .tile-9{
+    width:52px; height:52px; flex:none;
+    background:linear-gradient(155deg,#ffe184,var(--gold) 55%,var(--gold-deep));
+    border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display); font-size:1.9rem; color:#3a2a00;
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.5), inset 0 -3px 6px rgba(0,0,0,0.25), 0 6px 14px rgba(0,0,0,0.35);
+  }
+  .wordmark h1{
+    font-family: var(--font-display);
+    font-size: 2.6rem;
+    letter-spacing: 0.02em;
+    margin:0;
+    line-height:1;
+    color:var(--ink);
+  }
+  .tagline{ color:var(--ink-dim); margin:0 0 2rem; font-size:0.98rem; }
+
+  .site-nav{ margin-bottom:1.25rem; }
+  .home-link{
+    color:var(--ink-dim); text-decoration:none; font-size:0.85rem; font-weight:600;
+    display:inline-flex; align-items:center; gap:0.35rem;
+  }
+  .home-link:hover{ color:var(--gold); }
+
+  /* ---------- Panels ---------- */
+  .panel{
+    background: linear-gradient(180deg, var(--bg-panel), var(--bg-panel-2));
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:1.75rem;
+    position:relative;
+    overflow:hidden;
+  }
+  .panel::before{
+    content:"";
+    position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg, var(--gold), var(--teal));
+  }
+
+  /* ---------- Steppers ---------- */
+  .field-row{ display:flex; gap:1rem; margin-bottom:1.25rem; }
+  .field{ flex:1; }
+  .field label{
+    display:block; font-size:0.82rem; color:var(--ink-dim);
+    margin-bottom:0.5rem; font-weight:600;
+  }
+  .stepper{
+    display:flex; align-items:center; justify-content:space-between;
+    background:rgba(0,0,0,0.22); border:1px solid var(--line); border-radius:12px;
+    padding:0.35rem;
+  }
+  .stepper button{
+    width:34px; height:34px; border-radius:8px; border:none;
+    background:rgba(255,255,255,0.06); color:var(--ink);
+    font-size:1.15rem; font-weight:700;
+    transition:background 0.15s ease;
+  }
+  .stepper button:hover{ background:rgba(255,207,64,0.22); }
+  .stepper button:active{ transform:translateY(1px); }
+  .stepper .count{
+    font-family:var(--font-display); font-size:1.6rem; color:var(--gold);
+    min-width:2ch; text-align:center;
+  }
+
+  .total-badge{
+    display:inline-flex; align-items:center; gap:0.5rem;
+    font-size:0.88rem; color:var(--ink-dim);
+    padding:0.4rem 0.8rem; border-radius:999px;
+    background:rgba(255,255,255,0.04); border:1px solid var(--line);
+    margin-bottom:1.5rem;
+  }
+  .total-badge.ok{ color:var(--teal); border-color:rgba(45,212,191,0.4); }
+  .total-badge.bad{ color:var(--red); border-color:rgba(255,84,112,0.4); }
+  .total-badge .dot{ width:7px; height:7px; border-radius:50%; background:currentColor; }
+
+  /* ---------- Timer slider ---------- */
+  .timer-field{ margin-bottom:1.75rem; }
+  .timer-field label{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-size:0.82rem; color:var(--ink-dim); font-weight:600; margin-bottom:0.6rem;
+  }
+  .timer-readout{ font-family:var(--font-display); font-size:1.3rem; color:var(--gold); letter-spacing:0.03em; }
+  input[type="range"]{
+    -webkit-appearance:none; appearance:none;
+    width:100%; height:6px; border-radius:999px;
+    background:rgba(255,255,255,0.12);
+    outline:none;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:22px; height:22px; border-radius:50%;
+    background:var(--gold); border:3px solid var(--bg);
+    box-shadow:0 0 0 1px var(--gold-deep);
+    cursor:pointer;
+  }
+  input[type="range"]::-moz-range-thumb{
+    width:22px; height:22px; border-radius:50%;
+    background:var(--gold); border:3px solid var(--bg);
+    box-shadow:0 0 0 1px var(--gold-deep); cursor:pointer;
+  }
+
+  .status-line{ font-size:0.85rem; color:var(--ink-dim); margin-bottom:1.25rem; min-height:1.2em; }
+
+  .btn-primary{
+    width:100%; border:none; border-radius:12px; padding:0.95rem;
+    background:linear-gradient(155deg,#ffe184,var(--gold) 60%,var(--gold-deep));
+    color:#3a2a00; font-weight:800; font-size:1.05rem;
+    box-shadow:0 8px 20px rgba(255,207,64,0.18);
+    transition:transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .btn-primary:disabled{ opacity:0.45; cursor:not-allowed; box-shadow:none; }
+  .btn-primary:not(:disabled):hover{ transform:translateY(-1px); box-shadow:0 10px 24px rgba(255,207,64,0.28); }
+
+  .btn-secondary{
+    border:1px solid var(--line); border-radius:10px; padding:0.65rem 1.1rem;
+    background:rgba(255,255,255,0.05); color:var(--ink); font-weight:600; font-size:0.92rem;
+  }
+  .btn-secondary:hover{ background:rgba(255,255,255,0.1); }
+  .btn-teal{ background:rgba(45,212,191,0.14); border-color:rgba(45,212,191,0.4); color:var(--teal); }
+  .btn-teal:hover{ background:rgba(45,212,191,0.24); }
+
+  /* ---------- Game screen ---------- */
+  .game-top{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:1.4rem;
+  }
+  .timer-display{
+    font-family:var(--font-display); font-size:2.6rem; letter-spacing:0.03em;
+    color:var(--gold); font-variant-numeric:tabular-nums;
+  }
+  .timer-display.low{ color:var(--red); animation:pulse 1s infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+  .score-display{ text-align:right; }
+  .score-display .label{ font-size:0.78rem; color:var(--ink-dim); text-transform:uppercase; letter-spacing:0.06em; }
+  .score-display .value{ font-family:var(--font-display); font-size:2rem; color:var(--ink); }
+
+  .circle-wrap{
+    position:relative; width:min(320px, 84vw); aspect-ratio:1/1; margin:0 auto 1.5rem;
+  }
+  .letter-tile{
+    position:absolute; width:58px; height:58px; margin:-29px 0 0 -29px;
+    transform-origin:center; border:none; background:none; padding:0;
+    display:flex; align-items:center; justify-content:center;
+    -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+    -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+  }
+  .letter-tile .diamond{
+    width:100%; height:100%; border-radius:12px; transform:rotate(45deg);
+    background:linear-gradient(155deg,#ffe184,var(--gold) 55%,var(--gold-deep));
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.55), inset 0 -4px 8px rgba(0,0,0,0.28), 0 6px 14px rgba(0,0,0,0.4);
+    transition: opacity 0.15s ease, filter 0.15s ease;
+  }
+  .letter-tile .letter{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display); font-size:1.7rem; color:#3a2a00;
+    transition: opacity 0.15s ease;
+  }
+  .letter-tile{ opacity:0; animation:tile-in 0.4s ease forwards; }
+  .letter-tile.used{ pointer-events:none; cursor:default; }
+  .letter-tile.used .diamond{ opacity:0.28; filter:grayscale(0.4); }
+  .letter-tile.used .letter{ opacity:0.35; }
+  .letter-tile:active:not(.used) .diamond{ transform:rotate(45deg) scale(0.92); }
+  @keyframes tile-in{ from{ opacity:0; transform:scale(0.4);} to{ opacity:1; transform:scale(1);} }
+  @media (prefers-reduced-motion: reduce){
+    .letter-tile{ animation:none; opacity:1; }
+    .timer-display.low{ animation:none; }
+  }
+
+  .word-display{
+    width:100%; min-height:3.4rem; padding:0.9rem 1rem; border-radius:12px;
+    border:1px solid var(--line); background:rgba(0,0,0,0.22); color:var(--ink);
+    font-family:var(--font-display); font-size:1.7rem; letter-spacing:0.12em;
+    text-align:center; display:flex; align-items:center; justify-content:center;
+  }
+  .word-display .placeholder{ font-family:var(--font-body); font-size:0.95rem; font-weight:400; color:var(--ink-dim); letter-spacing:normal; }
+
+  .word-controls{ display:flex; gap:0.6rem; margin-top:0.7rem; }
+  .word-controls button{
+    flex:1; border:none; border-radius:12px; padding:0.85rem; font-size:1.05rem; font-weight:700;
+    -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+  }
+  .ctrl-btn{ background:rgba(255,255,255,0.06); color:var(--ink); }
+  .ctrl-btn:hover{ background:rgba(255,255,255,0.12); }
+  .ctrl-btn:disabled{ opacity:0.35; cursor:not-allowed; }
+  .ctrl-enter{
+    background:linear-gradient(155deg,#7cf0e2,var(--teal) 60%,var(--teal-deep)); color:#04211d;
+    flex:1.4;
+  }
+  .ctrl-enter:hover:not(:disabled){ filter:brightness(1.08); }
+
+  .feedback{ min-height:1.4em; text-align:center; font-size:0.92rem; margin:0.7rem 0 1.1rem; font-weight:500; }
+  .feedback.ok{ color:var(--teal); }
+  .feedback.bad{ color:var(--red); }
+
+  .chip-row{ display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1.5rem; min-height:2.4rem; }
+  .chip{
+    background:rgba(255,207,64,0.12); border:1px solid rgba(255,207,64,0.35);
+    color:var(--gold); padding:0.35rem 0.75rem; border-radius:999px;
+    font-size:0.88rem; font-weight:600;
+  }
+  .chip.found{ background:rgba(45,212,191,0.12); border-color:rgba(45,212,191,0.4); color:var(--teal); }
+
+  .game-controls{ display:flex; gap:0.75rem; justify-content:center; }
+
+  /* ---------- Results overlay ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(5,9,24,0.78);
+    display:flex; align-items:center; justify-content:center; padding:1.25rem;
+    z-index:50; backdrop-filter: blur(3px);
+  }
+  .overlay[hidden]{ display:none; }
+  .results-card{
+    width:100%; max-width:520px; max-height:88vh; overflow-y:auto; overscroll-behavior:contain;
+    background:linear-gradient(180deg, var(--bg-panel), var(--bg-panel-2));
+    border:1px solid var(--line); border-radius:18px; padding:1.75rem;
+  }
+  .results-card h2{
+    font-family:var(--font-display); font-size:2rem; margin:0 0 0.2rem; color:var(--gold);
+  }
+  .results-score{ font-size:1.1rem; color:var(--ink); margin-bottom:0.9rem; }
+  .letters-recap{ display:flex; gap:0.4rem; margin-bottom:1.1rem; flex-wrap:wrap; }
+  .letters-recap span{
+    width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,207,64,0.14); border:1px solid rgba(255,207,64,0.3);
+    font-family:var(--font-display); font-size:1.1rem; color:var(--gold);
+  }
+  .best-word-box{
+    background:rgba(45,212,191,0.08); border:1px solid rgba(45,212,191,0.3);
+    border-radius:12px; padding:0.85rem 1rem; margin-bottom:1.25rem;
+  }
+  .best-word-box .label{ font-size:0.78rem; color:var(--ink-dim); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.3rem; }
+  .best-word-box .words{ font-family:var(--font-display); font-size:1.3rem; color:var(--teal); letter-spacing:0.02em; }
+
+  .section-label{ font-size:0.85rem; font-weight:700; color:var(--ink); margin:1.1rem 0 0.5rem; }
+  .all-words-panel{
+    max-height:220px; overflow-y:auto; overscroll-behavior:contain; border:1px solid var(--line); border-radius:12px;
+    background:rgba(0,0,0,0.2); padding:0.6rem 0.8rem;
+  }
+  .all-words-panel::-webkit-scrollbar{ width:8px; }
+  .all-words-panel::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.15); border-radius:8px; }
+  .word-row{
+    display:flex; justify-content:space-between; padding:0.28rem 0; font-size:0.92rem;
+    border-bottom:1px solid rgba(255,255,255,0.05); color:var(--ink-dim);
+  }
+  .word-row:last-child{ border-bottom:none; }
+  .word-row.found{ color:var(--teal); font-weight:600; }
+  .word-row .len{ font-size:0.75rem; opacity:0.7; }
+
+  .results-controls{ display:flex; gap:0.75rem; margin-top:1.5rem; }
+  .results-controls button{ flex:1; }
+
+  @media (max-width: 420px){
+    .wordmark h1{ font-size:2.1rem; }
+    .timer-display{ font-size:2.1rem; }
+    .letter-tile{ width:50px; height:50px; margin:-25px 0 0 -25px; }
+    .letter-tile .letter{ font-size:1.45rem; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="site-nav"><a class="home-link" href="index.html">← Home</a></div>
+
+  <!-- ============ SETUP SCREEN ============ -->
+  <section id="screen-setup" class="screen active">
+    <div class="wordmark">
+      <div class="tile-9">9</div>
+      <h1>Letters Round</h1>
+    </div>
+    <p class="tagline">Pick your letters, beat the clock, find the longest word.</p>
+
+    <div class="panel">
+      <div class="field-row">
+        <div class="field">
+          <label>Consonants</label>
+          <div class="stepper">
+            <button type="button" id="consonantMinus" aria-label="Fewer consonants">−</button>
+            <span class="count" id="consonantCount">6</span>
+            <button type="button" id="consonantPlus" aria-label="More consonants">+</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Vowels</label>
+          <div class="stepper">
+            <button type="button" id="vowelMinus" aria-label="Fewer vowels">−</button>
+            <span class="count" id="vowelCount">3</span>
+            <button type="button" id="vowelPlus" aria-label="More vowels">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="total-badge ok" id="totalBadge">
+        <span class="dot"></span>
+        <span id="totalBadgeText">9 of 9 letters selected</span>
+      </div>
+
+      <div class="timer-field">
+        <label>Round length <span class="timer-readout" id="timerReadout">00:30</span></label>
+        <input type="range" id="timerSlider" min="30" max="300" step="5" value="30">
+      </div>
+
+      <p class="status-line" id="statusLine">Loading dictionary…</p>
+
+      <button class="btn-primary" id="startButton" disabled>Start Round</button>
+    </div>
+  </section>
+
+  <!-- ============ GAME SCREEN ============ -->
+  <section id="screen-game" class="screen">
+    <div class="game-top">
+      <div class="timer-display" id="timerDisplay">00:30</div>
+      <div class="score-display">
+        <div class="label">Score</div>
+        <div class="value" id="scoreValue">0</div>
+      </div>
+    </div>
+
+    <div class="circle-wrap" id="circleWrap"></div>
+
+    <div class="word-display" id="wordDisplay"><span class="placeholder">Tap letters to spell a word</span></div>
+    <div class="word-controls">
+      <button type="button" class="ctrl-btn" id="backspaceButton" aria-label="Backspace">⌫</button>
+      <button type="button" class="ctrl-btn" id="clearButton">Clear</button>
+      <button type="button" class="ctrl-enter" id="enterButton">Enter ↵</button>
+    </div>
+    <p class="feedback" id="feedback"></p>
+
+    <div class="chip-row" id="chipRow"></div>
+
+    <div class="game-controls">
+      <button class="btn-secondary" id="endRoundButton">End Round Now</button>
+      <button class="btn-secondary btn-teal" id="mainMenuButton">Main Menu</button>
+    </div>
+  </section>
+
+  <!-- ============ RESULTS OVERLAY ============ -->
+  <div class="overlay" id="resultsOverlay" hidden>
+    <div class="results-card">
+      <h2>Time's up!</h2>
+      <div class="results-score" id="resultsScore">Your score: 0</div>
+      <div class="letters-recap" id="lettersRecap"></div>
+
+      <div class="best-word-box" id="bestWordBox" hidden>
+        <div class="label">Best possible</div>
+        <div class="words" id="bestWordText"></div>
+      </div>
+
+      <div class="section-label" id="foundWordsLabel">You found 0 word(s)</div>
+      <div class="chip-row" id="resultsChipRow"></div>
+
+      <div class="section-label" id="allWordsLabel">All possible words</div>
+      <div class="all-words-panel" id="allWordsPanel"></div>
+
+      <div class="results-controls">
+        <button class="btn-primary" id="playAgainButton">Play Again</button>
+        <button class="btn-secondary btn-teal" id="resultsMainMenuButton">Main Menu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------------------------------------------------------------
+  // Letter bags — matches the real letters-round tile frequencies
+  // ---------------------------------------------------------------------
+  const VOWEL_COUNTS = {A:15, E:21, I:13, O:13, U:5};
+  const CONSONANT_COUNTS = {
+    B:2, C:3, D:6, F:2, G:3, H:2, J:1, K:1, L:5, M:4,
+    N:8, P:4, Q:1, R:9, S:9, T:9, V:1, W:1, X:1, Y:1, Z:1
+  };
+  const MIN_WORD_LEN = 4;
+  const MAX_WORD_LEN = 9;
+  const TOTAL_LETTERS = 9;
+
+  function expandBag(counts){
+    const bag = [];
+    for (const letter in counts){
+      for (let i=0;i<counts[letter];i++) bag.push(letter);
+    }
+    return bag;
+  }
+  function sampleWithoutReplacement(bag, n){
+    const copy = bag.slice();
+    const out = [];
+    for (let i=0;i<n;i++){
+      const idx = Math.floor(Math.random()*copy.length);
+      out.push(copy.splice(idx,1)[0]);
+    }
+    return out;
+  }
+  function shuffle(arr){
+    for (let i=arr.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [arr[i],arr[j]] = [arr[j],arr[i]];
+    }
+    return arr;
+  }
+  function drawLetters(numConsonants, numVowels){
+    const vowels = sampleWithoutReplacement(expandBag(VOWEL_COUNTS), numVowels);
+    const consonants = sampleWithoutReplacement(expandBag(CONSONANT_COUNTS), numConsonants);
+    return shuffle(vowels.concat(consonants));
+  }
+  function scoreWord(word, totalLetters){
+    return word.length === totalLetters ? word.length*2 : word.length;
+  }
+  function letterCounter(letters){
+    const m = new Map();
+    for (const l of letters){
+      const k = l.toLowerCase();
+      m.set(k, (m.get(k)||0)+1);
+    }
+    return m;
+  }
+  function wordCounter(word){
+    return letterCounter(word.split(''));
+  }
+  function canBuild(word, available){
+    const wc = wordCounter(word);
+    for (const [ch,n] of wc){
+      if ((available.get(ch)||0) < n) return false;
+    }
+    return true;
+  }
+
+  // ---------------------------------------------------------------------
+  // Dictionary loading (cached in localStorage after first successful load)
+  // ---------------------------------------------------------------------
+  const DICTIONARY_URL = "https://raw.githubusercontent.com/dolph/dictionary/master/enable1.txt";
+  const CACHE_KEY = "letters_round_dictionary_v1";
+  let DICTIONARY = new Set();
+
+  const FALLBACK_WORDS = `
+able about above acid acre actor adapt adept admit adopt adult after again
+agent agree ahead alarm alert alien alike alive allow alone along aloud
+alpha alter amaze amber amend among amuse anger angle angry ankle annoy
+apple apply arena argue arise armor aroma arrow aside asset atom attic
+audio aunt avoid awake award aware badge baker basic basin basis beach
+beard beast begin being below bench berry birth black blade blame blank
+blast blend bless blind block blood board boast bonus boost booth borrow
+brain brand brave bread break brick bride brief bring broad broke brown
+brush build built bunch burst cabin cable candy canoe carry catch cause
+cease chain chair chalk charm chart chase cheap check cheer chest chief
+child chill choir choke chord chose chunk churn civic claim clash class
+clean clear clerk click cliff climb clock close cloth cloud clown coach
+coast cocoa colon comet comic coral could count court cover crack craft
+crane crash crawl cream credit crime crisp cross crowd crown crush cubic
+cured curse curve cycle daily dairy dance dealt death debut decay decor
+delay dense depth derby diary digit dirty dizzy doubt dozen draft drain
+drama drank drawn dream dress drift drill drink drive drove drown eager
+eagle early earth easel eaten edge eight elbow elder elect elite email
+empty enemy enjoy enter entry equal error essay event every exact exam
+exist extra fable faced facet faint fairy faith false fancy fault favor
+feast fence fever fewer field fiery fifth fifty fight final first fixed
+flame flash fleet flesh flint float flock flood floor flour flown fluid
+flush focal focus force forge forth forty forum found frame frank fresh
+front frost frown fruit fully funny gauge gecko genre ghost giant given
+glare glass glory glove going grace grade grain grand grape graph grasp
+grass great greed green greet grief grill grind groom group grove guard
+guess guest guide guild habit happy harsh haste haven heard heart heavy
+hedge hence hobby honey honor horse hotel house human humor hurry ideal
+image imply index inner input issue ivory jelly joint joker joust judge
+juice jumbo jungle keep kettle kneel knife knock known label labor laden
+lance large laser latch later laugh layer learn least leave ledge legal
+lemon level light limit linen liver lobby local lodge logic loose lorry
+loser lower loyal lucky lunar lunch lyric magic major maker mango march
+marsh match maybe mayor medal media metal meter might minor minus mirth
+model month moral motor mound mount mourn mouse mouth movie music naive
+naked nasty nerve never newly niche night noble noise north notch novel
+nurse nylon oasis obese occur ocean offer often olive onion opera orbit
+order organ other ought outer owner oxide ozone paint panel panic paper
+parse party pasta patch pause peace pearl pedal penny phase phone photo
+piano piece pilot pinch pitch pixel place plain plane plant plate point
+poise pound power press price pride prime print prior prize probe promo
+prone proof proud prove pulse punch pupil purse queen query quest quick
+quiet quilt quirk quiz quote radar radio raise range rapid ratio reach
+react ready realm rebel refer reign relax reply retro rhyme ridge rigid
+rinse risky rival river roast robin robot rocky rogue roman rough round
+route royal rugby rumor rural rusty sadly saint salad salsa sauce scale
+scarf scary scene scent scoop score scout scrap screw seize sense serve
+seven shade shake shame shape share sharp shear sheep sheer sheet shelf
+shell shift shine shirt shock shoot shore short shout shown shrug siege
+sight silky silly since siren sixty skate skill skirt skull slate sleek
+sleep slice slide slime slope small smart smell smile smoke snack snake
+solar solid sonic sound south space spare spark speak spend spice spike
+spine split spoon sport spray squad stack staff stage stain stair stake
+stamp stand stark start state stead steal steam steel stern stick stiff
+still sting stock stone store storm story stove strap straw stray strip
+strut study stuff style sugar suite sunny super surge swarm swear sweat
+sweep sweet swift swing sword table taste taxes teach thank theme thick
+thief thing think third thorn those three throw thumb tiger tight timer
+tired title toast today token tonic topic torch total touch tough tower
+toxic trace track trade trail train trait trash treat trend trial tribe
+trick tried tries truck truly trunk trust truth tulip tumor tutor tweak
+twice twist ultra uncle under undue union unite unity until upper upset
+urban usage usual valid valor value vapor vault venue verse video vigor
+vinyl viral virus vital vivid vocal vodka voice voter waist watch water
+weary weave wedge weigh weird wharf wheel where which while white whole
+whose wider width wield woman world worry worth would wound woven wrist
+write wrong yacht yield young youth zebra zesty
+abandon academy account address advance advise airline airport allergy
+already amazing analyze anatomy anchor animal another anxiety approve
+arrange article assault attempt average balance bargain barrier battery
+beloved benefit betray beyond bicycle blanket blossom bracket brought
+budget bulletin burrito calendar camera candle captain capture careful
+cascade century chamber channel chapter charity chicken circuit citizen
+climate clothes cluster comfort command comment company complex compose
+concept concert conduct confirm connect consist contact contest context
+control convert cookie corner correct costume country courage cousin
+crystal current custody dazzle debate decline defense deliver delight
+deposit desert design desire detail detect develop diamond digital
+distant diverse divide doctor domain dolphin double drought during
+dynamic eastern effort element emotion empire endless energy engage
+engine english enough episode equity escape essence estate evening
+exceed excess excite exhaust expand expect explain express extend
+factor fantasy fashion feature ferrari fiction figure finance finish
+fitness flavor flowing forever formula forward founder freedom friend
+frontier funding future gadget garage garden gather gentle genuine
+gesture glacier golden gossip govern granite gravity grocery growth
+harvest hazard height helmet heritage heroic history horizon horrid
+hunger hundred husband imagine immune impact imperial impose improve
+include income indeed injury insect insight inspire instant instead
+intense involve island isolate jacket jealous journal journey justice
+kingdom kitchen laptop launch leader legend leisure liberty library
+license limited lineage listen literal lounge machine magnet mainly
+manage mansion margin marine market master maximum meaning measure
+medical member memory mental mention merchant message method mineral
+minute mirror mission mixture modest module moment monitor monster
+morning mostly motion mountain museum mystery nation native nearby
+needle neither network normal notice number obscure obtain office
+official onward opening opinion oppose option orange orchard outcome
+outdoor outline overall oxygen palace parade parent partner passage
+pattern pension people perfect perform perhaps period permit person
+picture pigeon pillow pirate planet plastic pledge plenty pocket
+poetry police policy portion positive possess potato powder prairie
+precise predict prefer premium prepare present pretend pretty prevent
+primary printer private problem process produce profile program
+project promise protect provide public purple purpose pursue puzzle
+quality quarter quickly rabbit random rather reality realize reason
+receive recent record reduce reflect regard region regular relief
+remain remove repair repeat report require rescue resist resort
+resource respect result retreat return reveal review reward ribbon
+ripple ritual rocket romance router safety sample sandwich satisfy
+scatter scholar science second section segment senator senior sequel
+serious servant service settle several shadow shallow shelter
+shepherd shortly shoulder signal silence silver simple singer sister
+slight smooth society soldier solitary source special species spirit
+sponsor spread square stable stadium standard station stomach strange
+stream street stretch strong student studio subject success suggest
+summary summer supply support suppose surface surgeon surplus survey
+suspect swallow symbol system talent target teacher temper temple
+tender tension theater theory therapy thereby thirsty thought thunder
+timber tissue toward tractor traffic transit tremble tribute trigger
+trouble tunnel turkey twelve unable unique universe update useful
+utility vacant vacuum valley vanish variety vehicle vendor venture
+verify version veteran victory village vintage violet virtual vision
+visitor volume voyage warfare warning wealthy weapon weather welcome
+western whisper window winner winter wisdom wonder worker writer
+yellow
+`.split(/\s+/).filter(Boolean);
+
+  function buildDictionaryFromText(text){
+    const dict = new Set();
+    const lines = text.split('\n');
+    for (let i=0;i<lines.length;i++){
+      const w = lines[i].trim().toLowerCase();
+      if (w.length >= MIN_WORD_LEN && w.length <= MAX_WORD_LEN && /^[a-z]+$/.test(w)){
+        dict.add(w);
+      }
+    }
+    return dict;
+  }
+
+  async function loadDictionary(setStatus){
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached){
+      setStatus("Loading saved word list…");
+      DICTIONARY = buildDictionaryFromText(cached);
+      return;
+    }
+    setStatus("Downloading dictionary (first run only)…");
+    try{
+      const res = await fetch(DICTIONARY_URL);
+      if (!res.ok) throw new Error("bad response");
+      const text = await res.text();
+      DICTIONARY = buildDictionaryFromText(text);
+      if (DICTIONARY.size > 0){
+        try{ localStorage.setItem(CACHE_KEY, text); } catch(e){ /* storage full — fine, just won't cache */ }
+      }
+    } catch(err){
+      setStatus("No internet connection — using the built-in word list.");
+      DICTIONARY = buildDictionaryFromText(FALLBACK_WORDS.join('\n'));
+      return;
+    }
+    setStatus(`Ready! Dictionary loaded (${DICTIONARY.size.toLocaleString()} words).`);
+  }
+
+  // ---------------------------------------------------------------------
+  // State
+  // ---------------------------------------------------------------------
+  const state = {
+    consonants: 6,
+    vowels: 3,
+    timerSeconds: 30,
+    letters: [],
+    letterCounts: new Map(),
+    letterTiles: [],   // {id, letter, used} — click-based selection for word building
+    currentWord: [],   // array of tile ids, in the order they were tapped
+    tileEls: {},       // id -> DOM element, so clicks can update visuals without a full re-render
+    foundWords: [], // {word, points}
+    score: 0,
+    remaining: 0,
+    timerHandle: null,
+    roundActive: false,
+    dictionaryReady: false,
+  };
+
+  // ---------------------------------------------------------------------
+  // DOM refs
+  // ---------------------------------------------------------------------
+  const screenSetup = document.getElementById('screen-setup');
+  const screenGame = document.getElementById('screen-game');
+
+  const consonantCount = document.getElementById('consonantCount');
+  const vowelCount = document.getElementById('vowelCount');
+  const totalBadge = document.getElementById('totalBadge');
+  const totalBadgeText = document.getElementById('totalBadgeText');
+  const timerSlider = document.getElementById('timerSlider');
+  const timerReadout = document.getElementById('timerReadout');
+  const statusLine = document.getElementById('statusLine');
+  const startButton = document.getElementById('startButton');
+
+  const timerDisplay = document.getElementById('timerDisplay');
+  const scoreValue = document.getElementById('scoreValue');
+  const circleWrap = document.getElementById('circleWrap');
+  const wordDisplay = document.getElementById('wordDisplay');
+  const backspaceButton = document.getElementById('backspaceButton');
+  const clearButton = document.getElementById('clearButton');
+  const enterButton = document.getElementById('enterButton');
+  const feedback = document.getElementById('feedback');
+  const chipRow = document.getElementById('chipRow');
+  const endRoundButton = document.getElementById('endRoundButton');
+  const mainMenuButton = document.getElementById('mainMenuButton');
+
+  const resultsOverlay = document.getElementById('resultsOverlay');
+  const resultsScore = document.getElementById('resultsScore');
+  const lettersRecap = document.getElementById('lettersRecap');
+  const bestWordBox = document.getElementById('bestWordBox');
+  const bestWordText = document.getElementById('bestWordText');
+  const foundWordsLabel = document.getElementById('foundWordsLabel');
+  const resultsChipRow = document.getElementById('resultsChipRow');
+  const allWordsLabel = document.getElementById('allWordsLabel');
+  const allWordsPanel = document.getElementById('allWordsPanel');
+  const playAgainButton = document.getElementById('playAgainButton');
+  const resultsMainMenuButton = document.getElementById('resultsMainMenuButton');
+
+  // ---------------------------------------------------------------------
+  // Setup screen behaviour
+  // ---------------------------------------------------------------------
+  function formatTime(totalSeconds){
+    const s = Math.max(0, totalSeconds);
+    const m = Math.floor(s/60);
+    const r = s%60;
+    return String(m).padStart(2,'0') + ':' + String(r).padStart(2,'0');
+  }
+
+  function updateTotalBadge(){
+    const total = state.consonants + state.vowels;
+    totalBadgeText.textContent = `${total} of ${TOTAL_LETTERS} letters selected`;
+    totalBadge.classList.toggle('ok', total === TOTAL_LETTERS);
+    totalBadge.classList.toggle('bad', total !== TOTAL_LETTERS);
+    updateStartButton();
+  }
+
+  function updateStartButton(){
+    const total = state.consonants + state.vowels;
+    startButton.disabled = !(total === TOTAL_LETTERS && state.dictionaryReady);
+  }
+
+  document.getElementById('consonantPlus').addEventListener('click', () => {
+    if (state.consonants < 9){ state.consonants++; consonantCount.textContent = state.consonants; updateTotalBadge(); }
+  });
+  document.getElementById('consonantMinus').addEventListener('click', () => {
+    if (state.consonants > 0){ state.consonants--; consonantCount.textContent = state.consonants; updateTotalBadge(); }
+  });
+  document.getElementById('vowelPlus').addEventListener('click', () => {
+    if (state.vowels < 9){ state.vowels++; vowelCount.textContent = state.vowels; updateTotalBadge(); }
+  });
+  document.getElementById('vowelMinus').addEventListener('click', () => {
+    if (state.vowels > 0){ state.vowels--; vowelCount.textContent = state.vowels; updateTotalBadge(); }
+  });
+
+  timerSlider.addEventListener('input', () => {
+    state.timerSeconds = parseInt(timerSlider.value, 10);
+    timerReadout.textContent = formatTime(state.timerSeconds);
+  });
+
+  startButton.addEventListener('click', startRound);
+
+  // ---------------------------------------------------------------------
+  // Starting a round
+  // ---------------------------------------------------------------------
+  function startRound(){
+    if (state.consonants + state.vowels !== TOTAL_LETTERS) return;
+
+    state.letters = drawLetters(state.consonants, state.vowels);
+    state.letterCounts = letterCounter(state.letters);
+    state.foundWords = [];
+    state.score = 0;
+    state.remaining = state.timerSeconds;
+    state.roundActive = true;
+
+    scoreValue.textContent = '0';
+    chipRow.innerHTML = '';
+    feedback.textContent = '';
+    feedback.className = 'feedback';
+    endRoundButton.disabled = false;
+    backspaceButton.disabled = false;
+    clearButton.disabled = false;
+    enterButton.disabled = false;
+
+    renderLetterCircle(state.letters);
+    resetWordDisplay();
+    timerDisplay.textContent = formatTime(state.remaining);
+    timerDisplay.classList.remove('low');
+
+    screenSetup.classList.remove('active');
+    screenGame.classList.add('active');
+
+    if (state.timerHandle) clearInterval(state.timerHandle);
+    state.timerHandle = setInterval(tick, 1000);
+  }
+
+  function renderLetterCircle(letters){
+    circleWrap.innerHTML = '';
+    state.tileEls = {};
+    state.letterTiles = letters.map((letter, i) => ({id: i, letter, used: false}));
+    state.currentWord = [];
+
+    const n = letters.length;
+    const radiusPct = 38;
+    state.letterTiles.forEach((tile, i) => {
+      const angle = -Math.PI/2 + i * (2*Math.PI/n);
+      const x = 50 + radiusPct * Math.cos(angle);
+      const y = 50 + radiusPct * Math.sin(angle);
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'letter-tile';
+      el.style.left = x + '%';
+      el.style.top = y + '%';
+      el.style.animationDelay = (i * 0.05) + 's';
+      el.innerHTML = `<div class="diamond"></div><div class="letter">${tile.letter}</div>`;
+      el.addEventListener('click', () => onLetterTileClick(tile.id));
+      circleWrap.appendChild(el);
+      state.tileEls[tile.id] = el;
+    });
+  }
+
+  function tick(){
+    if (!state.roundActive) return;
+    timerDisplay.textContent = formatTime(state.remaining);
+    timerDisplay.classList.toggle('low', state.remaining <= 10);
+    if (state.remaining <= 0){
+      endRound();
+      return;
+    }
+    state.remaining--;
+  }
+
+  // ---------------------------------------------------------------------
+  // Word building — tap letters in order, then Enter (mobile-friendly:
+  // no text input, so no on-screen keyboard pops up).
+  // ---------------------------------------------------------------------
+  function onLetterTileClick(id){
+    if (!state.roundActive) return;
+    const tile = state.letterTiles.find(t => t.id === id);
+    if (!tile || tile.used) return;
+    tile.used = true;
+    state.currentWord.push(id);
+    state.tileEls[id].classList.add('used');
+    renderWordDisplay();
+  }
+
+  function doBackspace(){
+    if (!state.roundActive || state.currentWord.length === 0) return;
+    const lastId = state.currentWord.pop();
+    const tile = state.letterTiles.find(t => t.id === lastId);
+    if (tile) tile.used = false;
+    if (state.tileEls[lastId]) state.tileEls[lastId].classList.remove('used');
+    renderWordDisplay();
+  }
+
+  function resetWordDisplay(){
+    state.letterTiles.forEach(t => { t.used = false; });
+    Object.values(state.tileEls).forEach(el => el.classList.remove('used'));
+    state.currentWord = [];
+    renderWordDisplay();
+  }
+
+  function renderWordDisplay(){
+    if (state.currentWord.length === 0){
+      wordDisplay.innerHTML = '<span class="placeholder">Tap letters to spell a word</span>';
+      return;
+    }
+    const word = state.currentWord.map(id => state.letterTiles.find(t => t.id === id).letter.toUpperCase()).join('');
+    wordDisplay.textContent = word;
+  }
+
+  backspaceButton.addEventListener('click', doBackspace);
+  clearButton.addEventListener('click', () => { if (state.roundActive) resetWordDisplay(); });
+  enterButton.addEventListener('click', submitWord);
+
+  // Optional: physical keyboard support for desktop users (taps do the same thing on mobile)
+  document.addEventListener('keydown', (e) => {
+    if (!state.roundActive) return;
+    if (e.key === 'Enter'){ submitWord(); return; }
+    if (e.key === 'Backspace'){ e.preventDefault(); doBackspace(); return; }
+    if (e.key === 'Escape'){ resetWordDisplay(); return; }
+    if (/^[a-zA-Z]$/.test(e.key)){
+      const letter = e.key.toLowerCase();
+      const tile = state.letterTiles.find(t => !t.used && t.letter.toLowerCase() === letter);
+      if (tile) onLetterTileClick(tile.id);
+    }
+  });
+
+  function setFeedback(text, ok){
+    feedback.textContent = text;
+    feedback.className = 'feedback ' + (ok ? 'ok' : 'bad');
+  }
+
+  function submitWord(){
+    if (!state.roundActive || state.currentWord.length === 0) return;
+    const raw = state.currentWord.map(id => state.letterTiles.find(t => t.id === id).letter.toLowerCase()).join('');
+    resetWordDisplay();
+
+    if (raw.length < MIN_WORD_LEN){
+      setFeedback(`"${raw}" is too short (min ${MIN_WORD_LEN} letters).`, false);
+      return;
+    }
+    if (state.foundWords.some(w => w.word === raw)){
+      setFeedback(`You already found "${raw}".`, false);
+      return;
+    }
+    if (!DICTIONARY.has(raw)){
+      setFeedback(`"${raw}" isn't in the dictionary.`, false);
+      return;
+    }
+
+    const points = scoreWord(raw, state.letters.length);
+    state.foundWords.push({word: raw, points});
+    state.score += points;
+    scoreValue.textContent = state.score;
+
+    const chip = document.createElement('span');
+    chip.className = 'chip found';
+    chip.textContent = `${raw.toUpperCase()} +${points}`;
+    chipRow.appendChild(chip);
+
+    const bonus = raw.length === state.letters.length ? '  Full house!' : '';
+    setFeedback(`Nice! "${raw}" is worth ${points} points.${bonus}`, true);
+  }
+
+  // ---------------------------------------------------------------------
+  // Ending a round / results
+  // ---------------------------------------------------------------------
+  endRoundButton.addEventListener('click', endRound);
+  mainMenuButton.addEventListener('click', () => goToSetup());
+  resultsMainMenuButton.addEventListener('click', () => { hideResults(); goToSetup(); });
+  playAgainButton.addEventListener('click', () => { hideResults(); startRound(); });
+
+  function endRound(){
+    if (!state.roundActive) return;
+    state.roundActive = false;
+    if (state.timerHandle){ clearInterval(state.timerHandle); state.timerHandle = null; }
+    backspaceButton.disabled = true;
+    clearButton.disabled = true;
+    enterButton.disabled = true;
+    endRoundButton.disabled = true;
+    setFeedback("Time's up!", true);
+    showResults();
+  }
+
+  function goToSetup(){
+    state.roundActive = false;
+    if (state.timerHandle){ clearInterval(state.timerHandle); state.timerHandle = null; }
+    screenGame.classList.remove('active');
+    screenSetup.classList.add('active');
+  }
+
+  function allPossibleWords(){
+    const available = state.letterCounts;
+    const matches = [];
+    DICTIONARY.forEach(w => {
+      if (w.length <= state.letters.length && canBuild(w, available)){
+        matches.push(w);
+      }
+    });
+    matches.sort((a,b) => b.length - a.length || a.localeCompare(b));
+    return matches;
+  }
+
+  function showResults(){
+    const allWords = allPossibleWords();
+    const bestLen = allWords.length ? allWords[0].length : 0;
+    const bestWords = allWords.filter(w => w.length === bestLen).slice(0,5);
+    const foundSet = new Set(state.foundWords.map(w => w.word));
+
+    resultsScore.textContent = `Your score: ${state.score}`;
+
+    lettersRecap.innerHTML = '';
+    state.letters.forEach(l => {
+      const span = document.createElement('span');
+      span.textContent = l.toUpperCase();
+      lettersRecap.appendChild(span);
+    });
+
+    if (bestWords.length){
+      bestWordBox.hidden = false;
+      const foundBest = bestWords.some(w => foundSet.has(w));
+      bestWordText.textContent = bestWords.map(w => w.toUpperCase()).join(', ') + (foundBest ? '  (you found it!)' : '');
+      document.querySelector('#bestWordBox .label').textContent = `Best possible: ${bestLen} letters`;
+    } else {
+      bestWordBox.hidden = true;
+    }
+
+    foundWordsLabel.textContent = `You found ${state.foundWords.length} word(s)`;
+    resultsChipRow.innerHTML = '';
+    state.foundWords.slice().sort((a,b) => b.points - a.points).forEach(({word, points}) => {
+      const chip = document.createElement('span');
+      chip.className = 'chip found';
+      chip.textContent = `${word.toUpperCase()} +${points}`;
+      resultsChipRow.appendChild(chip);
+    });
+
+    allWordsLabel.textContent = `All possible words (${allWords.length})`;
+    allWordsPanel.innerHTML = '';
+    allWords.forEach(w => {
+      const row = document.createElement('div');
+      row.className = 'word-row' + (foundSet.has(w) ? ' found' : '');
+      row.innerHTML = `<span>${w.toUpperCase()}${foundSet.has(w) ? ' ✓' : ''}</span><span class="len">${w.length}</span>`;
+      allWordsPanel.appendChild(row);
+    });
+
+    resultsOverlay.hidden = false;
+  }
+
+  function hideResults(){
+    resultsOverlay.hidden = true;
+  }
+
+  // ---------------------------------------------------------------------
+  // Init
+  // ---------------------------------------------------------------------
+  updateTotalBadge();
+  timerReadout.textContent = formatTime(state.timerSeconds);
+
+  loadDictionary((msg) => { statusLine.textContent = msg; }).then(() => {
+    state.dictionaryReady = true;
+    updateStartButton();
+  });
+
+})();
+</script>
+</body>
+</html>
